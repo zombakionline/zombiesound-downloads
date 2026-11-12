@@ -1,0 +1,37 @@
+name: Publish binary-only Pages mirror
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version to mirror from zombiesound-releases
+        required: true
+        type: string
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages-mirror
+  cancel-in-progress: false
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download only release binaries
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          mkdir -p public/${VERSION}
+          gh release download "v${VERSION}" --repo zombakionline/zombiesound-releases --pattern 'ZOMBIESOUND-Update.exe' --dir "public/${VERSION}"
+          gh release download "v${VERSION}" --repo zombakionline/zombiesound-releases --pattern "ZOMBIESOUND-Custom-Setup-${VERSION}.exe" --dir "public/${VERSION}"
+          printf 'Binary mirror for #ZOMBIESOUND %s\n' "$VERSION" > public/${VERSION}/index.html
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+      - name: Deploy binary mirror
+        id: deployment
+        uses: actions/deploy-pages@v4
