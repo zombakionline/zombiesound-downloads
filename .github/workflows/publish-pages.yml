@@ -14,10 +14,7 @@ concurrency:
   group: pages-mirror
   cancel-in-progress: false
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Download only release binaries
@@ -32,6 +29,13 @@ jobs:
       - uses: actions/upload-pages-artifact@v4
         with:
           path: public
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy binary mirror
         id: deployment
         uses: actions/deploy-pages@v4
